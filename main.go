@@ -13,8 +13,10 @@ import (
 
 func main() {
 	oak.SetupConfig.Screen = oak.Screen{
-		Width:  800,
-		Height: 450,
+		Width:  1600,
+		Height: 900,
+		// Width:  800,
+		// Height: 450,
 	}
 
 	oak.SetupConfig.Assets = oak.Assets{
@@ -50,7 +52,7 @@ func NewHello() *HelloScene {
 		modelPath:   filepath.Join("model", "dwarf.obj"),
 		texturePath: "dwarf_diffuse.png",
 		// camera:      birch.NewMovableCamera(birch.NewVertex(1, 1, 1), birch.Vertex{}, birch.Vertex{}, 100, .005),
-		camera: birch.NewStaticCamera(birch.NewVertex(1, 1, 1), birch.Vertex{}, birch.Vertex{}, 100),
+		camera: birch.NewStaticCamera(birch.NewVertex(1, 0.75, 1), birch.Vertex{}, birch.Vertex{}, 100),
 	}
 }
 

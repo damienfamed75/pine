@@ -10,6 +10,7 @@ require (
 	github.com/akavel/polyclip-go v0.0.0-20160111220610-2cfdb71461bd // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/disintegration/gift v1.2.1 // indirect
+	github.com/go-gl/mathgl v0.0.0-20190713194549-592312d8590a
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/hajimehoshi/go-mp3 v0.2.1 // indirect
 	github.com/oakmound/oak v2.0.0+incompatible

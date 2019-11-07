@@ -65,6 +65,22 @@ func (t Triangle) Perspective() Triangle {
 	}
 }
 
+func (t Triangle) Translate(x, y float64) Triangle {
+	t.a.x += x
+	t.b.x += x
+	t.c.x += x
+
+	t.a.y += y
+	t.b.y += y
+	t.c.y += y
+
+	return Triangle{
+		a: t.a,
+		b: t.b,
+		c: t.c,
+	}
+}
+
 func (t Triangle) BaryCenter(x, y int) Vertex {
 	p := Vertex{float64(x), float64(y), 0.0}
 	v0 := t.b.Sub(t.a)

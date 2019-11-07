@@ -114,9 +114,14 @@ func (r *Render) DrawOffset(buff draw.Image, xOff, yOff float64) {
 		eye := r.cam.Position
 		// eye := Vertex{math.Sin(mouseXt), math.Sin(mouseYt), math.Cos(mouseXt)}
 		// (More documentation needed here)
+
+		// z is the depth of the model. The higher the value, the more depth.
+		// 0 being the lowest depth. Making him very flat & orthographic
+		// 1 being the highest depth.
 		z := eye.Sub(ctr).Unit()
 		x := up.Cross(z).Unit()
 		y := z.Cross(x)
+		// y.x++
 
 		// For each triangle, draw it
 		for i := 0; i < len(r.tv); i++ {
