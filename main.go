@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 
 	"github.com/damienfamed75/pine/birch"
+	"github.com/damienfamed75/pine/view"
+	"github.com/go-gl/mathgl/mgl64"
 
 	"github.com/oakmound/oak"
 	"github.com/oakmound/oak/dlog"
@@ -18,6 +20,7 @@ func main() {
 		// Width:  800,
 		// Height: 450,
 	}
+	oak.SetupConfig.Title = "Hello"
 
 	oak.SetupConfig.Assets = oak.Assets{
 		AssetPath: "\\",
@@ -32,7 +35,6 @@ func main() {
 	// -> scene is used to obtain camera and then obj gets stored in scene
 
 	oak.Add("hello", hello.Start, hello.Loop, hello.End)
-
 	oak.Init("hello")
 }
 
@@ -41,18 +43,20 @@ type HelloScene struct {
 	modelPath   string
 	texturePath string
 
-	camera *birch.Camera
+	// camera *birch.Camera
+	camera *view.Camera
 
 	r render.Renderable
 }
 
 // NewHello initializes the default values of this scene.
 func NewHello() *HelloScene {
+	aspect := float64(oak.ScreenWidth) / float64(oak.ScreenHeight)
 	return &HelloScene{
 		modelPath:   filepath.Join("model", "dwarf.obj"),
 		texturePath: "dwarf_diffuse.png",
-		// camera:      birch.NewMovableCamera(birch.NewVertex(1, 1, 1), birch.Vertex{}, birch.Vertex{}, 100, .005),
-		camera: birch.NewStaticCamera(birch.NewVertex(1, 0.75, 1), birch.Vertex{}, birch.Vertex{}, 100),
+		// camera: birch.NewStaticCamera(birch.NewVertex(1, 0.75, 1), birch.Vertex{}, birch.Vertex{}, 100),
+		camera: view.NewCamera(mgl64.Vec3{1, 0.75, 1}, 70, aspect),
 	}
 }
 
@@ -83,7 +87,7 @@ func (h *HelloScene) Start(string, interface{}) {
 // Loop returns whether this scene should continue or end.
 // By always returning true, it indicates that the scene should never stop looping.
 func (h *HelloScene) Loop() bool {
-	h.camera.Update()
+	// h.camera.Update()
 	return true
 }
 

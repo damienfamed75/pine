@@ -6,6 +6,8 @@ import (
 	"math"
 	"os"
 
+	"github.com/damienfamed75/pine/view"
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/oakmound/oak/alg/floatgeom"
 	"github.com/oakmound/oak/mouse"
 	"github.com/oakmound/oak/render"
@@ -22,23 +24,28 @@ type Render struct {
 	// the textureData is the local texture file (.bmp in the original, .png in this version)
 	// that is referred to to color each triangle face
 	textureData *image.RGBA
+
+	transform mgl64.Mat4
+
 	// tv, tt, and tn need better names
-	tv []Triangle // triangle vertices
-	tt []Triangle // triangle textures
-	tn []Triangle // triangle normalized
+	tv []Triangle // triangle vertices - outvertices
+	tt []Triangle // triangle textures - outUVs
+	tn []Triangle // triangle normalized - outNormals
 	// the last mouse event is stored on the render so that when it changes,
 	// the render knows to update what should be drawn.
 	lastmouse mouse.Event
 
 	// Local pointer to the game's camera.
-	cam *Camera
+	// cam *Camera
+	cam *view.Camera
 }
 
 // NewRender creates a Render type to be drawn to screen.
 // If it fails, it will return nil and the cause for failure.
 // The inputs are the object and texture file paths to be loaded
 // and the width and height of the render to be drawn.
-func NewRender(cam *Camera, objfile, texfile string, w, h int) (*Render, error) {
+func NewRender(cam *view.Camera, objfile, texfile string, w, h int) (*Render, error) {
+	// func NewRender(cam *Camera, objfile, texfile string, w, h int) (*Render, error) {
 	// Open both the object and texture file
 	// if either fails to load, return nil and
 	// the cause.
@@ -75,6 +82,10 @@ func (r *Render) Draw(buff draw.Image) {
 	r.DrawOffset(buff, 0, 0)
 }
 
+func Unit(v mgl64.Vec3) mgl64.Vec3 {
+	return v.Mul(1.0 / v.Len())
+}
+
 // DrawOffset expects the render to draw itself to the input buffer,
 // offset from it's logical coordinates by xOff and yOff for x and y respectively
 func (r *Render) DrawOffset(buff draw.Image, xOff, yOff float64) {
@@ -104,24 +115,27 @@ func (r *Render) DrawOffset(buff draw.Image, xOff, yOff float64) {
 			}
 		}
 		// The center, or origin, is at 0,0,0
-		ctr := Vertex{0.0, 0.0, 0.0}
+		ctr := mgl64.Vec3{0.0, 0.0, 1.0}
 		// Which way up is, or pointing in the y direction
-		up := Vertex{0.0, 1.0, 0.0}
+		up := mgl64.Vec3{0.0, 1.0, 0.0}
 		// Where we're looking from
 		// x affects distance
 		// y is height of the camera
 		// z i'm unsure...
-		eye := r.cam.Position
+		eye := r.cam.GetPosition()
+		// proj := r.cam.GetViewProjection()
 		// eye := Vertex{math.Sin(mouseXt), math.Sin(mouseYt), math.Cos(mouseXt)}
 		// (More documentation needed here)
 
 		// z is the depth of the model. The higher the value, the more depth.
 		// 0 being the lowest depth. Making him very flat & orthographic
 		// 1 being the highest depth.
-		z := eye.Sub(ctr).Unit()
-		x := up.Cross(z).Unit()
+		// f := ctr.Sub(eye).Normalize()
+		// s := f.Cross(up.Normalize()).Normalize()
+		// u := s.Cross(f)
+		z := Unit(eye.Sub(ctr))
+		x := Unit(up.Cross(z))
 		y := z.Cross(x)
-		// y.x++
 
 		// For each triangle, draw it
 		for i := 0; i < len(r.tv); i++ {

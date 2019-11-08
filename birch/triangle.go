@@ -5,17 +5,18 @@ import (
 	"image/color"
 	"math"
 
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/oakmound/oak/alg/floatgeom"
 )
 
 // A Triangle is a set of three points or vertices.
 type Triangle struct {
-	a, b, c Vertex
+	a, b, c mgl64.Vec3
 }
 
 // Unit returns a Triangle where each vertex is converted into a unit vector.
 func (t Triangle) Unit() Triangle {
-	return Triangle{t.a.Unit(), t.b.Unit(), t.c.Unit()}
+	return Triangle{Unit(t.a), Unit(t.b), Unit(t.c)}
 }
 
 // Mul returns a Triangle with each vertex magnified by f.
@@ -25,19 +26,19 @@ func (t Triangle) Mul(f float64) Triangle {
 
 // More documentation needed in the rest of this file
 
-func (t Triangle) ViewTri(x, y, z, eye Vertex) Triangle {
+func (t Triangle) ViewTri(x, y, z, eye mgl64.Vec3) Triangle {
 	return Triangle{
-		Vertex{t.a.Dot(x) - x.Dot(eye), t.a.Dot(y) - y.Dot(eye), t.a.Dot(z) - z.Dot(eye)},
-		Vertex{t.b.Dot(x) - x.Dot(eye), t.b.Dot(y) - y.Dot(eye), t.b.Dot(z) - z.Dot(eye)},
-		Vertex{t.c.Dot(x) - x.Dot(eye), t.c.Dot(y) - y.Dot(eye), t.c.Dot(z) - z.Dot(eye)},
+		mgl64.Vec3{t.a.Dot(x) - x.Dot(eye), t.a.Dot(y) - y.Dot(eye), t.a.Dot(z) - z.Dot(eye)},
+		mgl64.Vec3{t.b.Dot(x) - x.Dot(eye), t.b.Dot(y) - y.Dot(eye), t.b.Dot(z) - z.Dot(eye)},
+		mgl64.Vec3{t.c.Dot(x) - x.Dot(eye), t.c.Dot(y) - y.Dot(eye), t.c.Dot(z) - z.Dot(eye)},
 	}
 }
 
-func (t Triangle) ViewNrm(x, y, z Vertex) Triangle {
+func (t Triangle) ViewNrm(x, y, z mgl64.Vec3) Triangle {
 	return Triangle{
-		Vertex{t.a.Dot(x), t.a.Dot(y), t.a.Dot(z)},
-		Vertex{t.b.Dot(x), t.b.Dot(y), t.b.Dot(z)},
-		Vertex{t.c.Dot(x), t.c.Dot(y), t.c.Dot(z)},
+		mgl64.Vec3{t.a.Dot(x), t.a.Dot(y), t.a.Dot(z)},
+		mgl64.Vec3{t.b.Dot(x), t.b.Dot(y), t.b.Dot(z)},
+		mgl64.Vec3{t.c.Dot(x), t.c.Dot(y), t.c.Dot(z)},
 	}.Unit()
 }
 
@@ -47,32 +48,28 @@ func (t Triangle) Viewport(field floatgeom.Point2) Triangle {
 	x := field.X() / 2.0
 	y := field.Y() / 4.0
 	return Triangle{
-		Vertex{w*t.a.x + x, h*t.a.y + y, (t.a.z + 1.0) / 1.5},
-		Vertex{w*t.b.x + x, h*t.b.y + y, (t.b.z + 1.0) / 1.5},
-		Vertex{w*t.c.x + x, h*t.c.y + y, (t.c.z + 1.0) / 1.5},
+		mgl64.Vec3{w*t.a.X() + x, h*t.a.Y() + y, (t.a.Z() + 1.0) / 1.5},
+		mgl64.Vec3{w*t.b.X() + x, h*t.b.Y() + y, (t.b.Z() + 1.0) / 1.5},
+		mgl64.Vec3{w*t.c.X() + x, h*t.c.Y() + y, (t.c.Z() + 1.0) / 1.5},
 	}
 }
 
 func (t Triangle) Perspective() Triangle {
 	c := 3.0
-	za := 1.0 - t.a.z/c
-	zb := 1.0 - t.b.z/c
-	zc := 1.0 - t.c.z/c
+	za := 1.0 - t.a.Z()/c
+	zb := 1.0 - t.b.Z()/c
+	zc := 1.0 - t.c.Z()/c
 	return Triangle{
-		Vertex{t.a.x / za, t.a.y / za, t.a.z / za},
-		Vertex{t.b.x / zb, t.b.y / zb, t.b.z / zb},
-		Vertex{t.c.x / zc, t.c.y / zc, t.c.z / zc},
+		mgl64.Vec3{t.a.X() / za, t.a.Y() / za, t.a.Z() / za},
+		mgl64.Vec3{t.b.X() / zb, t.b.Y() / zb, t.b.Z() / zb},
+		mgl64.Vec3{t.c.X() / zc, t.c.Y() / zc, t.c.Z() / zc},
 	}
 }
 
 func (t Triangle) Translate(x, y float64) Triangle {
-	t.a.x += x
-	t.b.x += x
-	t.c.x += x
-
-	t.a.y += y
-	t.b.y += y
-	t.c.y += y
+	t.a.Add(mgl64.Vec3{x, y})
+	t.b.Add(mgl64.Vec3{x, y})
+	t.c.Add(mgl64.Vec3{x, y})
 
 	return Triangle{
 		a: t.a,
@@ -81,8 +78,8 @@ func (t Triangle) Translate(x, y float64) Triangle {
 	}
 }
 
-func (t Triangle) BaryCenter(x, y int) Vertex {
-	p := Vertex{float64(x), float64(y), 0.0}
+func (t Triangle) BaryCenter(x, y int) mgl64.Vec3 {
+	p := mgl64.Vec3{float64(x), float64(y), 0.0}
 	v0 := t.b.Sub(t.a)
 	v1 := t.c.Sub(t.a)
 	v2 := p.Sub(t.a)
@@ -94,27 +91,29 @@ func (t Triangle) BaryCenter(x, y int) Vertex {
 	v := (d11*d20 - d01*d21) / (d00*d11 - d01*d01)
 	w := (d00*d21 - d01*d20) / (d00*d11 - d01*d01)
 	u := 1.0 - v - w
-	return Vertex{v, w, u}
+	return mgl64.Vec3{v, w, u}
 }
 
 func TDraw(buff *image.RGBA, zbuff [][]float64, vew, nrm, tex Triangle, textureData *image.RGBA) {
-	x0 := int(math.Min(vew.a.x, math.Min(vew.b.x, vew.c.x)))
-	y0 := int(math.Min(vew.a.y, math.Min(vew.b.y, vew.c.y)))
-	x1 := int(math.Max(vew.a.x, math.Max(vew.b.x, vew.c.x)))
-	y1 := int(math.Max(vew.a.y, math.Max(vew.b.y, vew.c.y)))
+	x0 := int(math.Min(vew.a.X(), math.Min(vew.b.X(), vew.c.X())))
+	y0 := int(math.Min(vew.a.Y(), math.Min(vew.b.Y(), vew.c.Y())))
+	x1 := int(math.Max(vew.a.X(), math.Max(vew.b.X(), vew.c.X())))
+	y1 := int(math.Max(vew.a.Y(), math.Max(vew.b.Y(), vew.c.Y())))
 	dims := textureData.Bounds()
 	buffH := buff.Bounds().Max.Y
 	for x := x0; x <= x1; x++ {
 		for y := y0; y <= y1; y++ {
 			bc := vew.BaryCenter(x, y)
-			if bc.x >= 0.0 && bc.y >= 0.0 && bc.z >= 0.0 {
-				z := bc.x*vew.b.z + bc.y*vew.c.z + bc.z*vew.a.z
-				if z > zbuff[x][y] {
-					light := Vertex{0.0, 0.0, 1.0}
-					varying := Vertex{light.Dot(nrm.b), light.Dot(nrm.c), light.Dot(nrm.a)}
+			if bc.X() >= 0.0 && bc.Y() >= 0.0 && bc.Z() >= 0.0 {
+				// Multiply everything by Z to create perspective.
+				z := bc.X()*vew.b.Z() + bc.Y()*vew.c.Z() + bc.Z()*vew.a.Z()
 
-					xx := (float64(dims.Max.X) - 1) * (0.0 + (bc.x*tex.b.x + bc.y*tex.c.x + bc.z*tex.a.x))
-					yy := (float64(dims.Max.Y) - 1) * (1.0 - (bc.x*tex.b.y + bc.y*tex.c.y + bc.z*tex.a.y))
+				if z > zbuff[x][y] {
+					light := mgl64.Vec3{0.0, 0.0, 1.0}
+					varying := mgl64.Vec3{light.Dot(nrm.b), light.Dot(nrm.c), light.Dot(nrm.a)}
+
+					xx := (float64(dims.Max.X) - 1) * (0.0 + (bc.X()*tex.b.X() + bc.Y()*tex.c.X() + bc.Z()*tex.a.X()))
+					yy := (float64(dims.Max.Y) - 1) * (1.0 - (bc.X()*tex.b.Y() + bc.Y()*tex.c.Y() + bc.Z()*tex.a.Y()))
 					intensity := bc.Dot(varying)
 					var shading uint32
 					if intensity > 0.0 {

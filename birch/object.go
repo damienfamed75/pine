@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/oakmound/oak/dlog"
 )
 
 // An Obj represents an parsing of a .obj file.
 type Obj struct {
-	vsv, vsn, vst []Vertex
+	vsv, vsn, vst []mgl64.Vec3
 	fs            []Face
 }
 
@@ -62,9 +63,9 @@ func (o Obj) Ttgen() []Triangle {
 
 // oparse parses the input file as an Obj
 func oparse(f *os.File) Obj {
-	vsv := make([]Vertex, 0)
-	vsn := make([]Vertex, 0)
-	vst := make([]Vertex, 0)
+	vsv := make([]mgl64.Vec3, 0)
+	vsn := make([]mgl64.Vec3, 0)
+	vst := make([]mgl64.Vec3, 0)
 	fs := make([]Face, 0)
 
 	scn := bufio.NewScanner(f)
@@ -86,13 +87,19 @@ func oparse(f *os.File) Obj {
 		}
 		if line[0] == 'v' && line[1] == 'n' {
 			fmt.Sscanf(line, "vn %f %f %f", &v.x, &v.y, &v.z)
-			vsn = append(vsn, v)
+			vsn = append(vsn, mgl64.Vec3{
+				v.x, v.y, v.z,
+			})
 		} else if line[0] == 'v' && line[1] == 't' {
 			fmt.Sscanf(line, "vt %f %f %f", &v.x, &v.y, &v.z)
-			vst = append(vst, v)
+			vst = append(vst, mgl64.Vec3{
+				v.x, v.y, v.z,
+			})
 		} else if line[0] == 'v' {
 			fmt.Sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z)
-			vsv = append(vsv, v)
+			vsv = append(vsv, mgl64.Vec3{
+				v.x, v.y, v.z,
+			})
 		} else if line[0] == 'f' {
 			fmt.Sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &f.va, &f.ta, &f.na, &f.vb, &f.tb, &f.nb, &f.vc, &f.tc, &f.nc)
 			fs = append(fs, Face{

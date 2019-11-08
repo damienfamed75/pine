@@ -68,3 +68,7 @@ func (c *Camera) GetViewProjection() mgl64.Mat4 {
 	// the perspective to the world around us.
 	return c.perspective.Mul4(mgl64.LookAtV(c.position, c.position.Add(c.forward), c.up))
 }
+
+func (c *Camera) GetPosition() mgl64.Vec3 {
+	return c.position
+}

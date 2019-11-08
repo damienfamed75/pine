@@ -1,56 +1,58 @@
 package birch
 
-import (
-	"math"
+// DEPRECATED
 
-	"github.com/oakmound/oak/mouse"
-)
+// import (
+// 	"math"
 
-type Camera struct {
-	Position   Vertex
-	Target     Vertex
-	Up         Vertex
-	Fovy       float64
-	DeltaMouse mouse.Event
+// 	"github.com/oakmound/oak/mouse"
+// )
 
-	// If the camera is movable, then have lastmouse event.
-	sensitivity float64
-	static      bool
-}
+// type Camera struct {
+// 	Position   Vertex
+// 	Target     Vertex
+// 	Up         Vertex
+// 	Fovy       float64
+// 	DeltaMouse mouse.Event
 
-func NewMovableCamera(pos, target, up Vertex, fovy, sensitivity float64) *Camera {
-	if sensitivity == 0.0 {
-		sensitivity = .005 // default if the sensitivity is zero.
-	}
+// 	// If the camera is movable, then have lastmouse event.
+// 	sensitivity float64
+// 	static      bool
+// }
 
-	return &Camera{
-		Position:    pos,
-		Target:      target,
-		Up:          up,
-		Fovy:        fovy,
-		sensitivity: sensitivity,
-		static:      false,
-	}
-}
+// func NewMovableCamera(pos, target, up Vertex, fovy, sensitivity float64) *Camera {
+// 	if sensitivity == 0.0 {
+// 		sensitivity = .005 // default if the sensitivity is zero.
+// 	}
 
-func NewStaticCamera(pos, target, up Vertex, fovy float64) *Camera {
-	return &Camera{
-		Position: pos,
-		Target:   target,
-		Up:       up,
-		Fovy:     fovy,
-		static:   true,
-	}
-}
+// 	return &Camera{
+// 		Position:    pos,
+// 		Target:      target,
+// 		Up:          up,
+// 		Fovy:        fovy,
+// 		sensitivity: sensitivity,
+// 		static:      false,
+// 	}
+// }
 
-func (c *Camera) Update() {
-	if !c.static && mouse.LastEvent != c.DeltaMouse {
-		mouseXt := mouse.LastEvent.X() * c.sensitivity
-		mouseYt := mouse.LastEvent.Y() * c.sensitivity
+// func NewStaticCamera(pos, target, up Vertex, fovy float64) *Camera {
+// 	return &Camera{
+// 		Position: pos,
+// 		Target:   target,
+// 		Up:       up,
+// 		Fovy:     fovy,
+// 		static:   true,
+// 	}
+// }
 
-		// The math here must be incorrect, because it acts wonky.
-		c.Position = Vertex{
-			math.Sin(mouseXt), math.Sin(mouseYt), math.Cos(mouseXt),
-		}
-	}
-}
+// func (c *Camera) Update() {
+// 	if !c.static && mouse.LastEvent != c.DeltaMouse {
+// 		mouseXt := mouse.LastEvent.X() * c.sensitivity
+// 		mouseYt := mouse.LastEvent.Y() * c.sensitivity
+
+// 		// The math here must be incorrect, because it acts wonky.
+// 		c.Position = Vertex{
+// 			math.Sin(mouseXt), math.Sin(mouseYt), math.Cos(mouseXt),
+// 		}
+// 	}
+// }
