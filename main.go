@@ -13,21 +13,30 @@ import (
 	"github.com/oakmound/oak/scene"
 )
 
+const (
+	screenWidth  = 1600
+	screenHeight = 900
+)
+
 func main() {
 	oak.SetupConfig.Screen = oak.Screen{
-		Width:  1600,
-		Height: 900,
-		// Width:  800,
-		// Height: 450,
+		Width:  screenWidth,
+		Height: screenHeight,
 	}
-	oak.SetupConfig.Title = "Hello"
 
+	oak.SetupConfig.Title = "Hello"
+	oak.SetupConfig.BatchLoad = true
 	oak.SetupConfig.Assets = oak.Assets{
-		AssetPath: "\\",
+		AssetPath: "/",
 		ImagePath: "model",
 	}
 
 	hello := NewHello()
+
+	oak.AddCommand("r", func([]string) {
+		hello.camera.Rotate(mgl64.DegToRad(10))
+		// hello.camera.Rotate(10)
+	})
 
 	// idea...
 	// new scene
@@ -51,7 +60,8 @@ type HelloScene struct {
 
 // NewHello initializes the default values of this scene.
 func NewHello() *HelloScene {
-	aspect := float64(oak.ScreenWidth) / float64(oak.ScreenHeight)
+	aspect := float64(screenWidth) / float64(screenHeight)
+
 	return &HelloScene{
 		modelPath:   filepath.Join("model", "dwarf.obj"),
 		texturePath: "dwarf_diffuse.png",
@@ -64,12 +74,19 @@ func NewHello() *HelloScene {
 func (h *HelloScene) Start(string, interface{}) {
 	// For rendering I'm using an N64 obj loader...
 	// If this was a practical demo, then I'd make a new obj loader.
+	// r, err := view.LoadObj(
+	// 	h.modelPath,
+	// 	h.texturePath,
+	// 	oak.ScreenWidth,
+	// 	oak.ScreenHeight,
+	// 	h.camera,
+	// )
 	r, err := birch.NewRender(
 		h.camera,
 		h.modelPath,
 		h.texturePath,
-		oak.ScreenWidth,
-		oak.ScreenHeight,
+		screenWidth,
+		screenHeight,
 	)
 	if err != nil {
 		// Use the oak logger to exit and log the error.

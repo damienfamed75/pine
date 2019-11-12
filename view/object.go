@@ -8,7 +8,9 @@ import (
 	"math"
 	"os"
 
+	"github.com/damienfamed75/pine/tdraw"
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/oakmound/oak/alg/floatgeom"
 	"github.com/oakmound/oak/render"
 )
 
@@ -46,6 +48,10 @@ func LoadObj(objFile, texFile string, w, h int, camera *Camera) (*Model, error) 
 	// Get the raw texture data from pixel to pixel.
 	mod.textureData = tex.GetRGBA()
 	mod.Sprite = render.NewEmptySprite(0, 0, w, h)
+	mod.camera = camera
+	// mod.transform = mgl64.Translate3D(0, 0, .5)
+	mod.transform = mgl64.Scale3D(2, 2, 2)
+	// mod.transform = mgl64.Scale3D(1, 1, 1)
 
 	var (
 		uvIndices     []uint
@@ -154,6 +160,10 @@ func (m *Model) Draw(buff draw.Image) {
 	m.DrawOffset(buff, 0, 0)
 }
 
+func Unit(v mgl64.Vec3) mgl64.Vec3 {
+	return v.Mul(1.0 / v.Len())
+}
+
 func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 	// Get the boundaries of the model's sprite.
 	// This should be the width and height assigned.
@@ -164,6 +174,8 @@ func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 	// Get the sprite's width and height.
 	spriteWidth := bounds.Max.X
 	spriteHeight := bounds.Max.Y
+
+	fmt.Printf("w[%d] h[%d]\n", spriteWidth, spriteHeight)
 
 	// Setup a zbuffer so we know what pixels we should draw and which ones
 	// are behind others we have already drawn. Initialize all values in the
@@ -176,13 +188,79 @@ func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 		}
 	}
 
-	proj := m.camera.GetViewProjection()
+	eye := m.camera.position
+	up := m.camera.up
+	forward := m.camera.forward
 
-	for i := 0; i < len(m.outVertices); i++ {
-		m.outNormals[i] = m.outNormals[i].Mul(proj.Det())
-		m.outVertices[i] = m.outVertices[i].Mul(proj.Det())
-		m.outNormals[i] = m.outNormals[i].Mul(proj.Det())
+	proj := m.camera.GetViewProjection()
+	_ = proj
+
+	z := Unit(eye.Sub(forward))
+	x := Unit(up.Cross(z))
+	y := z.Cross(x)
+
+	for i := 0; i < len(m.outVertices); i += 3 {
+		var (
+			mvert, mnrm, mtex tdraw.Triangle
+		)
+
+		tmpnrm := tdraw.Triangle{
+			A: m.outNormals[i],
+			B: m.outNormals[i+1],
+			C: m.outNormals[i+2],
+		}
+		mnrm = tmpnrm.ViewNrm(x, y, z)
+
+		tmpvert := tdraw.Triangle{
+			A: m.outVertices[i],
+			B: m.outVertices[i+1],
+			C: m.outVertices[i+2],
+		}
+		mvert = tmpvert.ViewTri(x, y, z, eye)
+
+		// mnrm = mnrm.View(
+		// 	m.outNormals[i], m.outNormals[i+1], m.outNormals[i+2],
+		// 	m.transform, proj, 1, 1, spriteWidth, spriteHeight,
+		// )
+
+		// mvert = mnrm.View(
+		// 	m.outVertices[i], m.outVertices[i+1], m.outVertices[i+2],
+		// 	m.transform, proj, 1, 1, spriteWidth, spriteHeight,
+		// )
+
+		mtex = tdraw.Triangle{
+			A: m.outUVs[i],
+			B: m.outUVs[i+1],
+			C: m.outUVs[i+2],
+		}
+
+		per := mvert.Perspective()
+
+		vew := per.Viewport(
+			floatgeom.Point2{float64(spriteWidth),
+				float64(spriteHeight)},
+		)
+
+		tdraw.TDraw(
+			m.Sprite.GetRGBA(),
+			zbuff,
+			vew,
+			mnrm,
+			mtex,
+			m.textureData,
+		)
+
+		// tdraw.TDraw(
+		// 	m.Sprite.GetRGBA(),
+		// 	zbuff,
+		// 	mvert,
+		// 	mnrm,
+		// 	mtex,
+		// 	m.textureData,
+		// )
 	}
+
+	m.Sprite.DrawOffset(buff, xOff, yOff)
 }
 
 func getFaceVertices(mod *Model, indices []uint, tmpVerts, out []mgl64.Vec3) {
