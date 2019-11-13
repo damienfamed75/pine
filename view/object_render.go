@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/draw"
 	"math"
+	"sync"
 
 	"github.com/damienfamed75/pine/tdraw"
 	"github.com/go-gl/mathgl/mgl64"
@@ -23,16 +24,12 @@ func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 	// Reset the sprite's RGBA values.
 	m.Sprite.SetRGBA(image.NewRGBA(bounds))
 
-	// Get the sprite's width and height.
-	spriteWidth := bounds.Max.X
-	spriteHeight := bounds.Max.Y
-
 	// Setup a zbuffer so we know what pixels we should draw and which ones
 	// are behind others we have already drawn. Initialize all values in the
 	// buffer to be as far back as possible (-math.MaxFloat64)
-	zbuff := make([][]float64, spriteWidth)
+	zbuff := make([][]float64, bounds.Max.X)
 	for i := range zbuff {
-		zbuff[i] = make([]float64, spriteHeight)
+		zbuff[i] = make([]float64, bounds.Max.Y)
 		for j := range zbuff[i] {
 			zbuff[i][j] = -math.MaxFloat64
 		}
@@ -58,56 +55,41 @@ func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 	x := up.Cross(z).Normalize()
 	y := z.Cross(x)
 
-	// For every triangle in the model.
-	//
-	// Loop loops every three vertices, because we need three vertices to build
-	// a triangle to render.
-	for i := 0; i < len(m.outVertices); i += 3 {
-		var (
-			mvert, mnrm, mtex tdraw.Triangle
-		)
-
-		// Vertex Normals.
-		mnrm = tdraw.Triangle{
-			A: m.outNormals[i],
-			B: m.outNormals[i+1],
-			C: m.outNormals[i+2],
-		}.ViewNrm(x, y, z)
-
-		// Model Coordinates.
-		mvert = tdraw.Triangle{
-			A: m.outVertices[i],
-			B: m.outVertices[i+1],
-			C: m.outVertices[i+2],
-		}.ViewTri(x, y, z, eye)
-
-		// Texture Coordinates.
-		mtex = tdraw.Triangle{
-			A: m.outUVs[i],
-			B: m.outUVs[i+1],
-			C: m.outUVs[i+2],
+	var (
+		wg      sync.WaitGroup
+		indices = make(chan int)
+		pkg     = workerPackage{
+			outUVs:      m.outUVs,
+			outVertices: m.outVertices,
+			outNormals:  m.outNormals,
+			zbuff:       zbuff,
+			spriteRGBA:  m.Sprite.GetRGBA(),
+			textureData: m.textureData,
+			x:           x,
+			y:           y,
+			z:           z,
+			eye:         eye,
+			// Get the sprite's width and height.
+			spriteDimensions: &image.Point{X: bounds.Max.X, Y: bounds.Max.Y},
+			proj:             proj,
+			transform:        transform,
 		}
+	)
 
-		// Perspective Vertices.
-		vew := tdraw.Triangle{
-			A: mgl64.Project(
-				mvert.A, transform, proj, 0, 0, spriteWidth, spriteHeight),
-			B: mgl64.Project(
-				mvert.B, transform, proj, 0, 0, spriteWidth, spriteHeight),
-			C: mgl64.Project(
-				mvert.C, transform, proj, 0, 0, spriteWidth, spriteHeight),
-		}
-
-		// Draw the triangles into the buffer.
-		tdraw.TDraw(
-			m.Sprite.GetRGBA(),
-			zbuff,
-			vew,
-			mnrm,
-			mtex,
-			m.textureData,
-		)
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go drawingWorker(&pkg, indices, &wg)
 	}
+
+	for i := 0; i < len(m.outVertices); i += 3 {
+		indices <- i
+	}
+
+	// Close the indices channel to signal that the workers may stop.
+	close(indices)
+
+	// Wait for all the workers to finish their work.
+	wg.Wait()
 
 	// Let oak render the buffer onto the window.
 	m.Sprite.DrawOffset(buff, xOff, yOff)

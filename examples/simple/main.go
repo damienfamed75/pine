@@ -1,7 +1,10 @@
 package main
 
 import (
+	"flag"
+	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/damienfamed75/pine/view"
 	"github.com/go-gl/mathgl/mgl64"
@@ -17,11 +20,22 @@ const (
 	screenHeight = 900
 )
 
+var (
+	targetFPS *int
+)
+
 func main() {
+	targetFPS = flag.Int("fps", 60, "target framerate")
+	log.Printf("target fps: %d\n", *targetFPS)
+
 	oak.SetupConfig.Screen = oak.Screen{
 		Width:  screenWidth,
 		Height: screenHeight,
 	}
+
+	// Set the FPS to render at 144 FPS.
+	oak.SetupConfig.FrameRate = *targetFPS
+	oak.SetupConfig.DrawFrameRate = *targetFPS
 
 	oak.SetupConfig.Title = "Hello"
 	oak.SetupConfig.BatchLoad = true
@@ -36,6 +50,9 @@ func main() {
 	// new scene
 	// newobj(scene, params...)
 	// -> scene is used to obtain camera and then obj gets stored in scene
+	//
+	// new idea
+	// context object to store the necessary info for rendering objects.
 
 	oak.Add("hello", hello.Start, hello.Loop, hello.End)
 	oak.Init("hello")
@@ -46,11 +63,9 @@ type HelloScene struct {
 	modelPath   string
 	texturePath string
 
-	// camera *birch.Camera
 	camera *view.Camera
 
 	r *view.Model
-	// r render.Renderable
 }
 
 // NewHello initializes the default values of this scene.
@@ -82,12 +97,18 @@ func (h *HelloScene) Start(string, interface{}) {
 		return
 	}
 
+	render.GlobalDrawStack.Push(render.NewLogicFPS())
 	// Set the renderable object.
 	h.r = r
 
 	// Render the 3D model.
 	render.Draw(r)
 }
+
+var (
+	frames int
+	last   = time.Now()
+)
 
 // Loop returns whether this scene should continue or end.
 // By always returning true, it indicates that the scene should never stop looping.

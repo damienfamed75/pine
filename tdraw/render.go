@@ -110,6 +110,7 @@ func (t Triangle) Viewport(field floatgeom.Point2) Triangle {
 	}
 }
 
+// TDraw draws triangles onto the given buffer.
 func TDraw(buff *image.RGBA, zbuff [][]float64, vew, nrm, tex Triangle, textureData *image.RGBA) {
 	x0 := int(math.Min(vew.A.X(), math.Min(vew.B.X(), vew.C.X())))
 	y0 := int(math.Min(vew.A.Y(), math.Min(vew.B.Y(), vew.C.Y())))
@@ -117,7 +118,8 @@ func TDraw(buff *image.RGBA, zbuff [][]float64, vew, nrm, tex Triangle, textureD
 	y1 := int(math.Max(vew.A.Y(), math.Max(vew.B.Y(), vew.C.Y())))
 	dims := textureData.Bounds()
 
-	// If the drawn pixels are out of the screen's range then skip them entirely.
+	// If the triangle is out of the screen's range then skip them entirely.
+	// TODO implement a good way to clip the triangles if they reach off the screen.
 	if (x0 < 0) || (x1 > len(zbuff)-1) {
 		return
 	}
@@ -144,9 +146,7 @@ func TDraw(buff *image.RGBA, zbuff [][]float64, vew, nrm, tex Triangle, textureD
 						shading = uint32(intensity * 0xFF)
 					}
 					zbuff[x][y] = z
-					// Change from the original gel: we subtract y from buffH because,
-					// somewhere, I (200sc) messed up the translation and we accidentally
-					// are rendering everything upsidedown. This is the easiest fix!
+
 					buff.Set(x, y, PShade(textureData.At(int(xx), int(yy)), shading))
 				}
 			}
