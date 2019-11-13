@@ -1,6 +1,10 @@
 package birch
 
-import "math"
+import (
+	"math"
+
+	"github.com/go-gl/mathgl/mgl64"
+)
 
 // A Vertex is a point in 3D space with an x, y, and z coordinate.
 type Vertex struct {
@@ -44,7 +48,7 @@ func (v Vertex) Unit() Vertex {
 }
 
 // VMaxLen returns the maximum length from a set of vertices
-func VMaxLen(vsv []Vertex) (max float64) {
+func VMaxLen(vsv []mgl64.Vec3) (max float64) {
 	for _, v := range vsv {
 		if v.Len() > max {
 			max = v.Len()

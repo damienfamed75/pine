@@ -3,7 +3,8 @@ package main
 import (
 	"path/filepath"
 
-	"github.com/damienfamed75/pine/birch"
+	"github.com/damienfamed75/pine/view"
+	"github.com/go-gl/mathgl/mgl64"
 
 	"github.com/oakmound/oak"
 	"github.com/oakmound/oak/dlog"
@@ -11,20 +12,30 @@ import (
 	"github.com/oakmound/oak/scene"
 )
 
+const (
+	screenWidth  = 1600
+	screenHeight = 900
+)
+
 func main() {
 	oak.SetupConfig.Screen = oak.Screen{
-		Width:  1600,
-		Height: 900,
-		// Width:  800,
-		// Height: 450,
+		Width:  screenWidth,
+		Height: screenHeight,
 	}
 
+	oak.SetupConfig.Title = "Hello"
+	oak.SetupConfig.BatchLoad = true
 	oak.SetupConfig.Assets = oak.Assets{
-		AssetPath: "\\",
+		AssetPath: "/",
 		ImagePath: "model",
 	}
 
 	hello := NewHello()
+
+	oak.AddCommand("r", func([]string) {
+		hello.camera.Rotate(mgl64.DegToRad(10))
+		// hello.camera.Rotate(10)
+	})
 
 	// idea...
 	// new scene
@@ -32,7 +43,6 @@ func main() {
 	// -> scene is used to obtain camera and then obj gets stored in scene
 
 	oak.Add("hello", hello.Start, hello.Loop, hello.End)
-
 	oak.Init("hello")
 }
 
@@ -41,31 +51,35 @@ type HelloScene struct {
 	modelPath   string
 	texturePath string
 
-	camera *birch.Camera
+	// camera *birch.Camera
+	camera *view.Camera
 
-	r render.Renderable
+	r *view.Model
+	// r render.Renderable
 }
 
 // NewHello initializes the default values of this scene.
 func NewHello() *HelloScene {
+	aspect := float64(screenWidth) / float64(screenHeight)
+
 	return &HelloScene{
 		modelPath:   filepath.Join("model", "dwarf.obj"),
 		texturePath: "dwarf_diffuse.png",
-		// camera:      birch.NewMovableCamera(birch.NewVertex(1, 1, 1), birch.Vertex{}, birch.Vertex{}, 100, .005),
-		camera: birch.NewStaticCamera(birch.NewVertex(1, 0.75, 1), birch.Vertex{}, birch.Vertex{}, 100),
+		camera:      view.NewCamera(mgl64.Vec3{1, 0.75, 1}, mgl64.DegToRad(90), aspect),
 	}
 }
 
 // Start is the initializer stage right when the scene is loaded into oak.
 func (h *HelloScene) Start(string, interface{}) {
-	// For rendering I'm using an N64 obj loader...
-	// If this was a practical demo, then I'd make a new obj loader.
-	r, err := birch.NewRender(
-		h.camera,
+	// Load an obj file using the new object loader in view package.
+	// Also load in the texture and store the necessary values to render it on
+	// the screen.
+	r, err := view.LoadObj(
 		h.modelPath,
 		h.texturePath,
 		oak.ScreenWidth,
 		oak.ScreenHeight,
+		h.camera,
 	)
 	if err != nil {
 		// Use the oak logger to exit and log the error.
@@ -83,7 +97,7 @@ func (h *HelloScene) Start(string, interface{}) {
 // Loop returns whether this scene should continue or end.
 // By always returning true, it indicates that the scene should never stop looping.
 func (h *HelloScene) Loop() bool {
-	h.camera.Update()
+	h.r.RotateExisting(mgl64.RadToDeg(.00005), mgl64.Vec3{0, 1, 0})
 	return true
 }
 

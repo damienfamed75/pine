@@ -12,6 +12,7 @@ type Camera struct {
 	// if the window is resized then the aspect ratio won't work
 	// and then the perspective matrix will break.
 	perspective mgl64.Mat4 // The perspective matrix to apply to other matrices.
+	transform   mgl64.Mat4
 	position    mgl64.Vec3 // The position of the camera in the world.
 
 	// Rotation based vectors.
@@ -37,6 +38,9 @@ func NewExplicitCamera(pos, forward, up mgl64.Vec3, fovy, aspect, zNear, zFar fl
 		position:    pos,
 		forward:     forward,
 		up:          up,
+		transform: mgl64.LookAtV(
+			pos, pos.Add(forward), up,
+		),
 	}
 }
 
@@ -53,6 +57,23 @@ func NewCamera(pos mgl64.Vec3, fovy, aspect float64) *Camera {
 	)
 }
 
+func (c *Camera) Rotate(angle float64) {
+	rz := mgl64.Rotate3DZ(angle)
+	c.forward = rz.Mul3x1(c.forward)
+}
+
+func (c *Camera) GetForwardRot() mgl64.Vec3 {
+	return c.forward
+}
+
+func (c *Camera) GetUpRot() mgl64.Vec3 {
+	return c.up
+}
+
+func (c *Camera) GetTransform() mgl64.Mat4 {
+	return c.transform
+}
+
 // GetViewProjection gets a transform matrix of the perspective matrix
 // to apply to the objects around us.
 func (c *Camera) GetViewProjection() mgl64.Mat4 {
@@ -66,5 +87,19 @@ func (c *Camera) GetViewProjection() mgl64.Mat4 {
 	//
 	// We multiply the eye space by our perspective transform matrix to apply
 	// the perspective to the world around us.
-	return c.perspective.Mul4(mgl64.LookAtV(c.position, c.position.Add(c.forward), c.up))
+	return c.perspective.Mul4(
+		mgl64.LookAtV(
+			c.position,
+			c.position.Add(c.forward),
+			c.up,
+		),
+	)
+}
+
+func (c *Camera) GetPerspective() mgl64.Mat4 {
+	return c.perspective
+}
+
+func (c *Camera) GetPosition() mgl64.Vec3 {
+	return c.position
 }
