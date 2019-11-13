@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/disintegration/gift"
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/oakmound/oak/render"
+	"github.com/oakmound/oak/render/mod"
 )
 
 // LoadObj loads a .obj file into memory, loading all its information
@@ -32,6 +34,13 @@ func LoadObj(objFile, texFile string, w, h int, camera *Camera) (*Model, error) 
 	if err != nil {
 		return nil, err
 	}
+
+	// Soften the texture.
+	mod.GiftFilter(
+		// ksize must be an odd number.
+		gift.Mean(5, true),
+	)(tex.GetRGBA())
+	
 
 	mod := &Model{
 		// Raw texture data from pixel to pixel.
