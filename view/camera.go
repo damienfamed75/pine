@@ -57,21 +57,29 @@ func NewCamera(pos mgl64.Vec3, fovy, aspect float64) *Camera {
 	)
 }
 
-func (c *Camera) Rotate(angle float64) {
-	rz := mgl64.Rotate3DZ(angle)
-	c.forward = rz.Mul3x1(c.forward)
-}
-
-func (c *Camera) GetForwardRot() mgl64.Vec3 {
+// GetForwardRotation returns what the camera perceives is forward in the world.
+func (c *Camera) GetForwardRotation() mgl64.Vec3 {
 	return c.forward
 }
 
-func (c *Camera) GetUpRot() mgl64.Vec3 {
+// GetUpRotation returns what the camera perceives is up in the world.
+func (c *Camera) GetUpRotation() mgl64.Vec3 {
 	return c.up
 }
 
+// GetTransform returns the camera's local transformation matrix.
 func (c *Camera) GetTransform() mgl64.Mat4 {
 	return c.transform
+}
+
+// GetPerspective returns the camera's perspective matrix.
+func (c *Camera) GetPerspective() mgl64.Mat4 {
+	return c.perspective
+}
+
+// GetPosition returns the camera's position in world space.
+func (c *Camera) GetPosition() mgl64.Vec3 {
+	return c.position
 }
 
 // GetViewProjection gets a transform matrix of the perspective matrix
@@ -94,12 +102,4 @@ func (c *Camera) GetViewProjection() mgl64.Mat4 {
 			c.up,
 		),
 	)
-}
-
-func (c *Camera) GetPerspective() mgl64.Mat4 {
-	return c.perspective
-}
-
-func (c *Camera) GetPosition() mgl64.Vec3 {
-	return c.position
 }
