@@ -3,7 +3,6 @@ package main
 import (
 	"path/filepath"
 
-	"github.com/damienfamed75/pine/birch"
 	"github.com/damienfamed75/pine/view"
 	"github.com/go-gl/mathgl/mgl64"
 
@@ -55,7 +54,8 @@ type HelloScene struct {
 	// camera *birch.Camera
 	camera *view.Camera
 
-	r render.Renderable
+	r *view.Model
+	// r render.Renderable
 }
 
 // NewHello initializes the default values of this scene.
@@ -65,28 +65,21 @@ func NewHello() *HelloScene {
 	return &HelloScene{
 		modelPath:   filepath.Join("model", "dwarf.obj"),
 		texturePath: "dwarf_diffuse.png",
-		// camera: birch.NewStaticCamera(birch.NewVertex(1, 0.75, 1), birch.Vertex{}, birch.Vertex{}, 100),
-		camera: view.NewCamera(mgl64.Vec3{1, 0.75, 1}, 70, aspect),
+		camera:      view.NewCamera(mgl64.Vec3{1, 0.75, 1}, mgl64.DegToRad(90), aspect),
 	}
 }
 
 // Start is the initializer stage right when the scene is loaded into oak.
 func (h *HelloScene) Start(string, interface{}) {
-	// For rendering I'm using an N64 obj loader...
-	// If this was a practical demo, then I'd make a new obj loader.
-	// r, err := view.LoadObj(
-	// 	h.modelPath,
-	// 	h.texturePath,
-	// 	oak.ScreenWidth,
-	// 	oak.ScreenHeight,
-	// 	h.camera,
-	// )
-	r, err := birch.NewRender(
-		h.camera,
+	// Load an obj file using the new object loader in view package.
+	// Also load in the texture and store the necessary values to render it on
+	// the screen.
+	r, err := view.LoadObj(
 		h.modelPath,
 		h.texturePath,
-		screenWidth,
-		screenHeight,
+		oak.ScreenWidth,
+		oak.ScreenHeight,
+		h.camera,
 	)
 	if err != nil {
 		// Use the oak logger to exit and log the error.
@@ -104,7 +97,7 @@ func (h *HelloScene) Start(string, interface{}) {
 // Loop returns whether this scene should continue or end.
 // By always returning true, it indicates that the scene should never stop looping.
 func (h *HelloScene) Loop() bool {
-	// h.camera.Update()
+	h.r.RotateExisting(mgl64.RadToDeg(.00005), mgl64.Vec3{0, 1, 0})
 	return true
 }
 

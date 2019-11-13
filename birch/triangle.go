@@ -24,6 +24,34 @@ func (t Triangle) Mul(f float64) Triangle {
 	return Triangle{t.A.Mul(f), t.B.Mul(f), t.C.Mul(f)}
 }
 
+func (t Triangle) Add3x1(v mgl64.Vec3) Triangle {
+	return Triangle{
+		A: mgl64.Vec3{
+			t.A.X() + v.X(), t.A.Y() + v.Y(), t.A.Z() + v.Z(),
+		},
+		B: mgl64.Vec3{
+			t.B.X() + v.X(), t.B.Y() + v.Y(), t.B.Z() + v.Z(),
+		},
+		C: mgl64.Vec3{
+			t.C.X() + v.X(), t.C.Y() + v.Y(), t.C.Z() + v.Z(),
+		},
+	}
+}
+
+func (t Triangle) Mul3x1(v mgl64.Vec3) Triangle {
+	return Triangle{
+		A: mgl64.Vec3{
+			t.A.X() * v.X(), t.A.Y() * v.Y(), t.A.Z() * v.Z(),
+		},
+		B: mgl64.Vec3{
+			t.B.X() * v.X(), t.B.Y() * v.Y(), t.B.Z() * v.Z(),
+		},
+		C: mgl64.Vec3{
+			t.C.X() * v.X(), t.C.Y() * v.Y(), t.C.Z() * v.Z(),
+		},
+	}
+}
+
 // More documentation needed in the rest of this file
 
 func (t Triangle) ViewTri(x, y, z, eye mgl64.Vec3) Triangle {
@@ -99,8 +127,16 @@ func TDraw(buff *image.RGBA, zbuff [][]float64, vew, nrm, tex Triangle, textureD
 	y0 := int(math.Min(vew.A.Y(), math.Min(vew.B.Y(), vew.C.Y())))
 	x1 := int(math.Max(vew.A.X(), math.Max(vew.B.X(), vew.C.X())))
 	y1 := int(math.Max(vew.A.Y(), math.Max(vew.B.Y(), vew.C.Y())))
+
+	// If the drawn pixels are out of the screen's range then skip them entirely.
+	if (x0 < 0) || (x1 > len(zbuff)-1) {
+		return
+	}
+	if (y0 < 0) || (y1 > len(zbuff[0])-1) {
+		return
+	}
+
 	dims := textureData.Bounds()
-	buffH := buff.Bounds().Max.Y
 	for x := x0; x <= x1; x++ {
 		for y := y0; y <= y1; y++ {
 			bc := vew.BaryCenter(x, y)
@@ -120,10 +156,8 @@ func TDraw(buff *image.RGBA, zbuff [][]float64, vew, nrm, tex Triangle, textureD
 						shading = uint32(intensity * 0xFF)
 					}
 					zbuff[x][y] = z
-					// Change from the original gel: we subtract y from buffH because,
-					// somewhere, I (200sc) messed up the translation and we accidentally
-					// are rendering everything upsidedown. This is the easiest fix!
-					buff.Set(x, buffH-y, PShade(textureData.At(int(xx), int(yy)), shading))
+
+					buff.Set(x, y, PShade(textureData.At(int(xx), int(yy)), shading))
 				}
 			}
 		}

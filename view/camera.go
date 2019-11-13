@@ -1,8 +1,6 @@
 package view
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -35,10 +33,6 @@ type Camera struct {
 // Warning: To not set zNear and zFar too far apart or else there could be some
 // floating point precision errors that arise.
 func NewExplicitCamera(pos, forward, up mgl64.Vec3, fovy, aspect, zNear, zFar float64) *Camera {
-	per := mgl64.Perspective(fovy, aspect, zNear, zFar)
-
-	fmt.Printf("per [%v]\n", per)
-
 	return &Camera{
 		perspective: mgl64.Perspective(fovy, aspect, zNear, zFar),
 		position:    pos,
@@ -55,7 +49,6 @@ func NewCamera(pos mgl64.Vec3, fovy, aspect float64) *Camera {
 	return NewExplicitCamera(
 		pos,                 // Position of the camera.
 		mgl64.Vec3{0, 0, 1}, // Z axis is what we perceive is forward.
-		// mgl64.Vec3{0, 0, 1}, // Z axis is what we perceive is forward.
 		mgl64.Vec3{0, 1, 0}, // Y is what we perceive is up.
 		fovy,                // Field of vision.
 		aspect,              // Aspect ratio.
