@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/damienfamed75/pine/tdraw"
+
 	"github.com/go-gl/mathgl/mgl64"
 )
 
@@ -18,6 +19,7 @@ func (m *Model) Draw(buff draw.Image) {
 // DrawOffset will simply render the model and then offset it on the window
 // by the provided x and y offsets.
 func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
+
 	// Get the boundaries of the model's sprite.
 	// This should be the width and height assigned.
 	bounds := m.Sprite.GetRGBA().Bounds()
