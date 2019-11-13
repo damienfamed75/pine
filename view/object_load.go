@@ -41,25 +41,19 @@ func LoadObj(objFile, texFile string, w, h int, camera *Camera) (*Model, error) 
 		// Enough data to render the object.
 		camera: camera,
 		// quat: mgl64.QuatRotate(mgl64.DegToRad(0), mgl64.Vec3{0, 1, 0}),
-		transform: mgl64.Scale3D(1, 1, 1).Mul4(mgl64.Translate3D(0, 0, 0)),
+		scale:    mgl64.Scale3D(1, 1, 1),
+		position: mgl64.Translate3D(0, 0, 0),
 	}
 
-	// Get the raw texture data from pixel to pixel.
-	mod.textureData = tex.GetRGBA()
-	mod.Sprite = render.NewEmptySprite(0, 0, w, h)
-	mod.camera = camera
 	// quat := mgl64.QuatIdent().Rotate(mgl64.Vec3{
 	// 	0, mgl64.DegToRad(45), 0,
 	// })
-	mod.quat = mgl64.QuatRotate(mgl64.DegToRad(0), mgl64.Vec3{0, 1, 0})
 	// mod.transform = mgl64.Translate3D(0, 0, 0).
 	// 	Mul4(quat.Mat4()).
 	// 	Mul4(mgl64.Scale3D(1, 1, 1))
 	// mod.transform = mgl64.Translate3D(0, 0, -2).
 	// 	Mul4(mgl64.HomogRotate3D(mgl64.DegToRad(45), mgl64.Vec3{0, 1, 0})).
 	// 	Mul4(mgl64.Scale3D(1, 1, 1))
-	mod.transform = mgl64.Scale3D(1, 1, 1).
-		Mul4(mgl64.Translate3D(0, 0, 0))
 
 	var (
 		uvIndices     []uint

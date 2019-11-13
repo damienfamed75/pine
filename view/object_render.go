@@ -40,13 +40,15 @@ func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 
 	// Rotation gets applied to the camera items to emulate that the camera
 	// is viewing the object from a different angle.
-	eye := m.quat.Rotate(m.camera.position)    // rotate position.
-	up := m.quat.Rotate(m.camera.up)           // rotate upward rotation.
-	forward := m.quat.Rotate(m.camera.forward) // rotate forward rotation.
+	eye := m.quat.Rotate(m.camera.GetPosition())            // position.
+	up := m.quat.Rotate(m.camera.GetUpRotation())           // upward rotation.
+	forward := m.quat.Rotate(m.camera.GetForwardRotation()) // forward rotation.
 
 	// Get the camera's projection matrix.
 	// This allows us to create perspective when drawing the object.
 	proj := m.camera.GetViewProjection()
+
+	transform := m.GetTransform()
 
 	// If I'm able to remove these values that'd be create.
 	//
@@ -89,11 +91,11 @@ func (m *Model) DrawOffset(buff draw.Image, xOff, yOff float64) {
 		// Perspective Vertices.
 		vew := tdraw.Triangle{
 			A: mgl64.Project(
-				mvert.A, m.transform, proj, 0, 0, spriteWidth, spriteHeight),
+				mvert.A, transform, proj, 0, 0, spriteWidth, spriteHeight),
 			B: mgl64.Project(
-				mvert.B, m.transform, proj, 0, 0, spriteWidth, spriteHeight),
+				mvert.B, transform, proj, 0, 0, spriteWidth, spriteHeight),
 			C: mgl64.Project(
-				mvert.C, m.transform, proj, 0, 0, spriteWidth, spriteHeight),
+				mvert.C, transform, proj, 0, 0, spriteWidth, spriteHeight),
 		}
 
 		// Draw the triangles into the buffer.
