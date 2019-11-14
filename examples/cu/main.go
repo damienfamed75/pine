@@ -10,18 +10,27 @@
 package main
 
 import (
+	"encoding/binary"
+	"fmt"
 	"image"
 	"image/color"
-	"image/draw"
+	"io/ioutil"
 	"log"
 	"math"
+	"os"
 
-	"github.com/oakmound/oak/dlog"
-	"github.com/oakmound/shiny/driver"
-	"github.com/oakmound/shiny/screen"
-	"github.com/oakmound/shiny/widget/glwidget"
-	"github.com/oakmound/shiny/widget/node"
-	"github.com/oakmound/shiny/widget/theme"
+	"golang.org/x/exp/shiny/driver"
+	"golang.org/x/exp/shiny/screen"
+
+	// "github.com/oakmound/shiny/driver"
+	// "github.com/oakmound/shiny/screen"
+	"golang.org/x/mobile/event/lifecycle"
+	"golang.org/x/mobile/event/paint"
+	"golang.org/x/mobile/event/size"
+	"golang.org/x/mobile/exp/app/debug"
+	"golang.org/x/mobile/exp/f32"
+	"golang.org/x/mobile/exp/gl/glutil"
+	"golang.org/x/mobile/gl"
 )
 
 var (
@@ -40,7 +49,7 @@ var (
 
 	screenControl screen.Screen
 	windowControl screen.Window
-	winBuffer     screen.Image
+	// winBuffer     screen.Image
 
 	windowRect image.Rectangle
 )
@@ -49,100 +58,266 @@ func main() {
 	driver.Main(func(s screen.Screen) {
 		screenControl = s
 
-		var err error
-		winBuffer, err = screenControl.NewImage(image.Point{scrWidth, scrHeight})
-		if err != nil {
-			log.Fatalf("error creating winbuffer: %s", err)
-		}
-		glwidget.NewGL(drawer)
+		windowControl, _ = s.NewWindow(&screen.NewWindowOptions{
+			Width:  800,
+			Height: 600,
+			Title:  "Hello, World!",
+		})
 
-		changeWindow(0, 0, scrWidth, scrHeight)
+		// var err error
+		// winBuffer, err = screenControl.NewImage(image.Point{scrWidth, scrHeight})
+		// if err != nil {
+		// 	log.Fatalf("error creating winbuffer: %s", err)
+		// }
+
+		// changeWindow(0, 0, scrWidth, scrHeight)
+
+		var glctx gl.Context
+		var sz size.Event
+		_ = sz
 
 		for {
 
-			tx, err := screenControl.NewTexture(winBuffer.Bounds().Max)
-			if err != nil {
-				log.Fatalf("failed to create win texture: %s", err)
+			switch e := windowControl.NextEvent().(type) {
+			case lifecycle.Event:
+				switch e.Crosses(lifecycle.StageVisible) {
+				case lifecycle.CrossOn:
+					fmt.Printf("Initializing scene\n")
+					glctx, _ = e.DrawContext.(gl.Context)
+					onStart(glctx)
+					windowControl.Send(paint.Event{})
+				case lifecycle.CrossOff:
+					fmt.Printf("Ending scene\n")
+					glctx, _ = e.DrawContext.(gl.Context)
+					onStop(glctx)
+					glctx = nil
+					return
+				}
+			case size.Event:
+				sz = e
+				touchX = float32(sz.WidthPx / 2)
+				touchY = float32(sz.HeightPx / 2)
+			case paint.Event:
+				if glctx == nil || e.External {
+					continue
+				}
+				onPaint(glctx, sz)
+				windowControl.Publish()
+				windowControl.Send(paint.Event{}) // Keep calling this even to paint more.
 			}
 
-			tx.Upload(image.Point{0, 0}, winBuffer, winBuffer.Bounds())
-			windowControl.Scale(windowRect, tx, tx.Bounds(), draw.Src)
-			windowControl.Publish()
-			// winBuffer.RGBA().SetRGBA(10, 10, blue0)
-			// winBuffer.RGBA().SetRGBA(10, 11, blue0)
-			// winBuffer.RGBA().SetRGBA(10, 12, blue0)
-			// winBuffer.RGBA().SetRGBA(10, 13, blue0)
+			// tx, err := screenControl.NewTexture(winBuffer.Bounds().Max)
+			// if err != nil {
+			// 	log.Fatalf("failed to create win texture: %s", err)
+			// }
+
+			// tx.Upload(image.Point{0, 0}, winBuffer, winBuffer.Bounds())
+			// windowControl.Scale(windowRect, tx, tx.Bounds(), draw.Src)
+			// windowControl.Publish()
 
 		}
 
 	})
 
-	// scr := screen.S(screen.Title("Hello,World"))
+	// gldriver.Main(func(s screen.Screen) {
+	// 	w, _ := s.NewWindow(screen.WindowGenerator{
+	// 		Width:  800,
+	// 		Height: 600,
+	// 	})
+	// 	defer w.Release()
 
-	// win := screen.NewWindowGenerator(screen.Dimensions(800,600))
+	// })
 
-	// winBuff := scr.
-}
-
-func drawer(glctx *glwidget.GL) {
-	ctx := node.PaintBaseContext{
-		Theme: theme.Default,
-		Dst:   winBuffer.RGBA(),
-	}
-	glctx.PaintBase(&ctx, image.Point{0, 0})
-}
-
-func windowController(s screen.Screen, x, y int32, width, height int) (screen.Window, error) {
-	return s.NewWindow(screen.NewWindowGenerator(
-		screen.Dimensions(width, height),
-		screen.Title("Hello, World!"),
-		screen.Position(x, y),
-		screen.Fullscreen(false),
-		screen.Borderless(false),
-		screen.TopMost(false),
-	))
-}
-
-func changeWindow(x, y int32, width, height int) {
-	// The window controller handles incoming hardware or platform events and
-	// publishes image data to the screen.
-	wC, err := windowController(screenControl, x, y, width, height)
-	if err != nil {
-		dlog.Error(err)
-		panic(err)
-	}
-	windowControl = wC
-	ChangeWindow(width, height)
-}
-
-// ChangeWindow sets the width and height of the game window. Although exported,
-// calling it without a size event will probably not act as expected.
-func ChangeWindow(width, height int) {
-	// Draw a black frame to cover up smears
-	// Todo: could restrict the black to -just- the area not covered by the
-	// scaled screen buffer
-	buff, err := screenControl.NewImage(image.Point{width, height})
-	if err == nil {
-		draw.Draw(buff.RGBA(), buff.Bounds(), image.Black, image.Point{0, 0}, draw.Src)
-		windowControl.Upload(image.Point{0, 0}, buff, buff.Bounds())
-	} else {
-		dlog.Error(err)
-	}
-	var x, y int
-	// if UseAspectRatio {
-	// 	inRatio := float64(width) / float64(height)
-	// 	if aspectRatio > inRatio {
-	// 		newHeight := alg.RoundF64(float64(height) * (inRatio / aspectRatio))
-	// 		y = (newHeight - height) / 2
-	// 		height = newHeight - y
-	// 	} else {
-	// 		newWidth := alg.RoundF64(float64(width) * (aspectRatio / inRatio))
-	// 		x = (newWidth - width) / 2
-	// 		width = newWidth - x
+	// app.Main(func(a app.App) {
+	// 	var glctx gl.Context
+	// 	var sz size.Event
+	// 	for e := range a.Events() {
+	// 		switch e := a.Filter(e).(type) {
+	// 		case lifecycle.Event:
+	// 			switch e.Crosses(lifecycle.StageVisible) {
+	// 			case lifecycle.CrossOn:
+	// 				fmt.Printf("Initializing scene\n")
+	// 				glctx, _ = e.DrawContext.(gl.Context)
+	// 				onStart(glctx)
+	// 				a.Send(paint.Event{})
+	// 			case lifecycle.CrossOff:
+	// 				fmt.Printf("Ending scene\n")
+	// 				glctx, _ = e.DrawContext.(gl.Context)
+	// 				onStop(glctx)
+	// 				glctx = nil
+	// 				return
+	// 			}
+	// 		case size.Event:
+	// 			sz = e
+	// 			touchX = float32(sz.WidthPx / 2)
+	// 			touchY = float32(sz.HeightPx / 2)
+	// 		case paint.Event:
+	// 			if glctx == nil || e.External {
+	// 				continue
+	// 			}
+	// 			onPaint(glctx, sz)
+	// 			a.Publish()
+	// 			a.Send(paint.Event{}) // Keep calling this even to paint more.
+	// 		case key.Event:
+	// 			// If the escape key is pressed, then kill the app.
+	// 			if e.Code == key.CodeEscape {
+	// 				a.Send(lifecycle.Event{
+	// 					From: lifecycle.StageVisible, To: lifecycle.StageDead})
+	// 			}
+	// 		}
 	// 	}
-	// }
-	windowRect = image.Rect(-x, -y, width, height)
+	// })
 }
+
+var (
+	touchX   float32
+	touchY   float32
+	col      gl.Uniform
+	offset   gl.Uniform
+	images   *glutil.Images
+	fps      *debug.FPS
+	program  gl.Program
+	buf      gl.Buffer
+	position gl.Attrib
+)
+
+var triangleData = f32.Bytes(binary.LittleEndian,
+	0.0, 0.4, 0.0, // top left
+	0.0, 0.0, 0.0, // bottom left
+	0.4, 0.0, 0.0, // bottom right
+)
+
+func loadShader(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	bVal, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bVal), nil
+}
+
+func onStart(glctx gl.Context) {
+	var err error
+
+	vertexShader, err := loadShader("basic.vert")
+	if err != nil {
+		log.Fatalf("failed to load shader: %s", err)
+	}
+
+	fragmentShader, err := loadShader("basic.frag")
+	if err != nil {
+		log.Fatalf("failed to load shader: %s", err)
+	}
+
+	program, err = glutil.CreateProgram(glctx, vertexShader, fragmentShader)
+	if err != nil {
+		log.Fatalf("failed to create program: %s", err)
+	}
+
+	buf = glctx.CreateBuffer()
+	glctx.BindBuffer(gl.ARRAY_BUFFER, buf)
+	glctx.BufferData(gl.ARRAY_BUFFER, triangleData, gl.STATIC_DRAW)
+
+	position = glctx.GetAttribLocation(program, "position")
+	col = glctx.GetUniformLocation(program, "color")
+	offset = glctx.GetUniformLocation(program, "offset")
+
+	images = glutil.NewImages(glctx)
+	fps = debug.NewFPS(images)
+}
+
+func onStop(glctx gl.Context) {
+	glctx.DeleteProgram(program)
+	glctx.DeleteBuffer(buf)
+	fps.Release()
+	images.Release()
+}
+
+var (
+	vertexCount     = 3
+	coordsPerVertex = 3
+	gr              float32
+)
+
+func onPaint(glctx gl.Context, sz size.Event) {
+	glctx.ClearColor(1, 0, 0, 1)
+	glctx.Clear(gl.COLOR_BUFFER_BIT)
+
+	gr += 0.01
+	if gr > 1 {
+		gr = 0
+	}
+
+	glctx.UseProgram(program)
+	glctx.Uniform4f(col, 0, gr, 0, 1)
+	glctx.Uniform2f(offset, touchX/float32(sz.WidthPx), touchY/float32(sz.HeightPx))
+
+	glctx.BindBuffer(gl.ARRAY_BUFFER, buf)
+
+	glctx.EnableVertexAttribArray(position)
+	glctx.VertexAttribPointer(position, coordsPerVertex, gl.FLOAT, false, 0, 0)
+	glctx.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+	glctx.DisableVertexAttribArray(position)
+
+	fps.Draw(sz)
+}
+
+// func windowController(s screen.Screen, x, y int32, width, height int) (screen.Window, error) {
+// 	return s.NewWindow(screen.NewWindowGenerator(
+// 		screen.Dimensions(width, height),
+// 		screen.Title("Hello, World!"),
+// 		screen.Position(x, y),
+// 		screen.Fullscreen(false),
+// 		screen.Borderless(false),
+// 		screen.TopMost(false),
+// 	))
+// }
+
+// func changeWindow(x, y int32, width, height int) {
+// 	// The window controller handles incoming hardware or platform events and
+// 	// publishes image data to the screen.
+// 	wC, err := windowController(screenControl, x, y, width, height)
+// 	if err != nil {
+// 		log.Fatalf("failed to change window: %s", err)
+// 	}
+// 	windowControl = wC
+// 	ChangeWindow(width, height)
+// }
+
+// // ChangeWindow sets the width and height of the game window. Although exported,
+// // calling it without a size event will probably not act as expected.
+// func ChangeWindow(width, height int) {
+// 	// Draw a black frame to cover up smears
+// 	// Todo: could restrict the black to -just- the area not covered by the
+// 	// scaled screen buffer
+// 	buff, err := screenControl.NewImage(image.Point{width, height})
+// 	if err == nil {
+// 		draw.Draw(buff.RGBA(), buff.Bounds(), image.Black, image.Point{0, 0}, draw.Src)
+// 		windowControl.Upload(image.Point{0, 0}, buff, buff.Bounds())
+// 	} else {
+// 		log.Fatalf("failed to create screen image: %s", err)
+// 	}
+// 	var x, y int
+// 	// if UseAspectRatio {
+// 	// 	inRatio := float64(width) / float64(height)
+// 	// 	if aspectRatio > inRatio {
+// 	// 		newHeight := alg.RoundF64(float64(height) * (inRatio / aspectRatio))
+// 	// 		y = (newHeight - height) / 2
+// 	// 		height = newHeight - y
+// 	// 	} else {
+// 	// 		newWidth := alg.RoundF64(float64(width) * (aspectRatio / inRatio))
+// 	// 		x = (newWidth - width) / 2
+// 	// 		width = newWidth - x
+// 	// 	}
+// 	// }
+// 	windowRect = image.Rect(-x, -y, width, height)
+// }
 
 // //+build darwin,metal
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"path/filepath"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/oakmound/oak"
 	"github.com/oakmound/oak/dlog"
+	"github.com/oakmound/oak/event"
 	"github.com/oakmound/oak/render"
 	"github.com/oakmound/oak/scene"
 )
@@ -96,6 +98,11 @@ func (h *HelloScene) Start(string, interface{}) {
 		dlog.Error(err)
 		return
 	}
+
+	event.DefaultBus.Bind(func(c int, dat interface{}) int {
+		fmt.Printf("\nDATA[%v]\n", dat)
+		return 0
+	}, event.ViewportUpdate, 0)
 
 	render.GlobalDrawStack.Push(render.NewLogicFPS())
 	// Set the renderable object.
